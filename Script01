@@ -52,38 +52,191 @@ buttons.fly.MouseButton1Click:Connect(function()
 		flyVelocity.Parent = root
 	else
 		flyVelocity.Parent = nil
-	end
+-- Основные переменные
+local enabled = false
+local flyEnabled = false
+local noclipEnabled = false
+local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Создаем главное окно GUI
+local DeltaGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local OpenButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local Title = Instance.new("TextLabel")
+local FlyButton = Instance.new("TextButton")
+local NoclipButton = Instance.new("TextButton")
+local UICorner_2 = Instance.new("UICorner")
+local UICorner_3 = Instance.new("UICorner")
+
+DeltaGui.Name = "DeltaGui"
+DeltaGui.Parent = game.CoreGui
+DeltaGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = DeltaGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.35, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 150)
+MainFrame.Visible = false
+
+UICorner.CornerRadius = UDim.new(0, 6)
+UICorner.Parent = MainFrame
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1.000
+Title.Position = UDim2.new(0, 0, 0.05, 0)
+Title.Size = UDim2.new(0, 200, 0, 20)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Delta Executor"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14.000
+
+FlyButton.Name = "FlyButton"
+FlyButton.Parent = MainFrame
+FlyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+FlyButton.Position = UDim2.new(0.1, 0, 0.3, 0)
+FlyButton.Size = UDim2.new(0, 160, 0, 30)
+FlyButton.Font = Enum.Font.Gotham
+FlyButton.Text = "Fly: OFF"
+FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyButton.TextSize = 14.000
+
+UICorner_2.CornerRadius = UDim.new(0, 6)
+UICorner_2.Parent = FlyButton
+
+NoclipButton.Name = "NoclipButton"
+NoclipButton.Parent = MainFrame
+NoclipButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+NoclipButton.Position = UDim2.new(0.1, 0, 0.6, 0)
+NoclipButton.Size = UDim2.new(0, 160, 0, 30)
+NoclipButton.Font = Enum.Font.Gotham
+NoclipButton.Text = "Noclip: OFF"
+NoclipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipButton.TextSize = 14.000
+
+UICorner_3.CornerRadius = UDim.new(0, 6)
+UICorner_3.Parent = NoclipButton
+
+OpenButton.Name = "OpenButton"
+OpenButton.Parent = DeltaGui
+OpenButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+OpenButton.Position = UDim2.new(0, 0, 0.45, 0)
+OpenButton.Size = UDim2.new(0, 100, 0, 30)
+OpenButton.Font = Enum.Font.Gotham
+OpenButton.Text = "Open GUI"
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 14.000
+
+-- Функция для Fly
+local function toggleFly()
+    flyEnabled = not flyEnabled
+    
+    if flyEnabled then
+        FlyButton.Text = "Fly: ON"
+        FlyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        
+        -- Активация Fly
+        local bodyVelocity = Instance.new("BodyVelocity", character.HumanoidRootPart)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        
+        userinputservice = game:GetService("UserInputService")
+        
+        local function fly()
+            local vel = character.HumanoidRootPart.Velocity
+            character.HumanoidRootPart.Velocity = Vector3.new(vel.X, 0, vel.Z)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
+        
+        local function onInput(input, gameProcessed)
+            if input.KeyCode == Enum.KeyCode.Space then
+                bodyVelocity.Velocity = Vector3.new(0, 50, 0)
+            elseif input.KeyCode == Enum.KeyCode.LeftShift then
+                bodyVelocity.Velocity = Vector3.new(0, -50, 0)
+            end
+        end
+        
+        userinputservice.InputBegan:Connect(onInput)
+        userinputservice.InputEnded:Connect(fly)
+    else
+        FlyButton.Text = "Fly: OFF"
+        FlyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        
+        -- Деактивация Fly
+        for _, v in pairs(character.HumanoidRootPart:GetChildren()) do
+            if v:IsA("BodyVelocity") then
+                v:Destroy()
+            end
+        end
+    end
+end
+
+-- Функция для Noclip
+local function toggleNoclip()
+    noclipEnabled = not noclipEnabled
+    
+    if noclipEnabled then
+        NoclipButton.Text = "Noclip: ON"
+        NoclipButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        
+        -- Активация Noclip
+        character:WaitForChild("Humanoid"):ChangeState(11)
+        
+        local function noclipLoop()
+            if noclipEnabled and character and character:FindFirstChild("Humanoid") then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end
+        
+        game:GetService("RunService").Stepped:Connect(noclipLoop)
+    else
+        NoclipButton.Text = "Noclip: OFF"
+        NoclipButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        
+        -- Деактивация Noclip
+        if character and character:FindFirstChild("Humanoid") then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+            character.Humanoid:ChangeState(15)
+        end
+    end
+end
+
+-- Обработчики кнопок
+OpenButton.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    MainFrame.Visible = enabled
+    OpenButton.Text = enabled and "Close GUI" or "Open GUI"
 end)
 
--- Noclip
-local noclip = false
-buttons.noclip = createBtn("Noclip", 75)
-buttons.noclip.MouseButton1Click:Connect(function()
-	noclip = not noclip
-end)
+FlyButton.MouseButton1Click:Connect(toggleFly)
+NoclipButton.MouseButton1Click:Connect(toggleNoclip)
 
--- Render Loop
-game:GetService("RunService").RenderStepped:Connect(function()
-	if flying then
-		local cam = workspace.CurrentCamera
-		local dir = Vector3.new()
-		local uis = game:GetService("UserInputService")
-		if uis:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-		if uis:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-		if uis:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-		if uis:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-		if dir.Magnitude > 0 then
-			flyVelocity.Velocity = dir.Unit * 60
-		else
-			flyVelocity.Velocity = Vector3.zero
-		end
-	end
-
-	if noclip and character then
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = false
-			end
-		end
-	end
+-- Обновление персонажа при смерти/изменении
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = character:WaitForChild("Humanoid")
+    
+    if flyEnabled then
+        toggleFly()
+        toggleFly() -- Двойной вызов для повторной активации
+    end
+    
+    if noclipEnabled then
+        toggleNoclip()
+        toggleNoclip() -- Двойной вызов для повторной активации
+    end
 end)
