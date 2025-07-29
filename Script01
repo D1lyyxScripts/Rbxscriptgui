@@ -1,0 +1,89 @@
+-- // GUI: Fly, Noclip, Infinite Jump //
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local main = Instance.new("Frame", ScreenGui)
+main.Size = UDim2.new(0, 160, 0, 130)
+main.Position = UDim2.new(0, 20, 0.5, -65)
+main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+
+local buttons = {}
+local function createBtn(name, yPos)
+	local btn = Instance.new("TextButton", main)
+	btn.Size = UDim2.new(1, -10, 0, 30)
+	btn.Position = UDim2.new(0, 5, 0, yPos)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.Text = ""
+	btn.BorderSizePixel = 0
+	return btn
+end
+
+-- Infinite Jump
+local infJump = false
+buttons.jump = createBtn("Jump", 5)
+buttons.jump.MouseButton1Click:Connect(function()
+	infJump = not infJump
+end)
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+	if infJump and humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+-- Fly
+local flying = false
+local flyVelocity = Instance.new("BodyVelocity")
+flyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+flyVelocity.P = 1250
+
+buttons.fly = createBtn("Fly", 40)
+buttons.fly.MouseButton1Click:Connect(function()
+	flying = not flying
+	if flying then
+		flyVelocity.Parent = root
+	else
+		flyVelocity.Parent = nil
+	end
+end)
+
+-- Noclip
+local noclip = false
+buttons.noclip = createBtn("Noclip", 75)
+buttons.noclip.MouseButton1Click:Connect(function()
+	noclip = not noclip
+end)
+
+-- Render Loop
+game:GetService("RunService").RenderStepped:Connect(function()
+	if flying then
+		local cam = workspace.CurrentCamera
+		local dir = Vector3.new()
+		local uis = game:GetService("UserInputService")
+		if uis:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+		if uis:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+		if uis:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+		if uis:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+		if dir.Magnitude > 0 then
+			flyVelocity.Velocity = dir.Unit * 60
+		else
+			flyVelocity.Velocity = Vector3.zero
+		end
+	end
+
+	if noclip and character then
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
